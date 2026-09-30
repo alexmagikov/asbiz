@@ -130,11 +130,22 @@ async def run_candidate(
                 res = await client.astream(
                     prompt(cand, row), max_tokens=cand.max_tokens
                 )
+                
+                expected = row["gold"]["category"]
+                predicted = parse_category(res.text)
+
+                if predicted != expected:
+                    print(
+                        f"\nОшибка на обращении {row['id']}\n"
+                        f"Текст: {row['text']}\n"
+                        f"Ожидалось: {expected}\n"
+                        f"Распознанная категория: {predicted}"
+                    )
             except LLMError:
                 return Row(row["id"], ok=False, failed=True)
         return Row(
             row["id"],
-            parse_category(res.text) == row["gold"]["category"],
+            predicted == expected,
             truncated=res.truncated,
             latency_s=res.total_s,
             ttft_s=res.ttft_s,
